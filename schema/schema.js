@@ -1,3 +1,11 @@
+
+/*
+
+ Schema contains all the data graphQL needs
+
+ */
+
+
 const graphql = require('graphql');
 const axios = require('axios');
 
@@ -27,7 +35,11 @@ const CompanyType = new GraphQLObjectType({
 });
 
 const UserType = new GraphQLObjectType({
-  name: 'User',
+  name: 'User', // This property defines the type. Capitlized by convention
+  /*
+  *   This defines the fields to be fetched.
+  *   It takes an object with f
+  */
   fields: () => ({
     id: { type: GraphQLString },
     firstName: { type: GraphQLString },
@@ -42,17 +54,39 @@ const UserType = new GraphQLObjectType({
   }),
 });
 
-// used  to communicate with the database
+// RootQuery is the entrypoint to our data
+// All types defined needs to be put
+// As fields in the  RootQuery
 const RootQuery = new GraphQLObjectType({
   name: 'RootQueryType',
   fields: {
     user: {
       type: UserType,
-      // args are passed when the query is made
+      // the arguments required for this query (user)
       args: { id: { type: GraphQLString } },
+      // database / server calls to grap data
+      //
       resolve(parentValue, args) {
         return axios.get(`http://localhost:3000/users/${args.id}`)
           .then(resp => resp.data);
+      },
+    },
+    users: {
+      type: GraphQLList(UserType),
+      args: {},
+      resolve(parentValue, args) {
+        console.log('adding user!');
+        return axios.get('http://localhost:3000/users')
+          .then(res => res.data);
+      },
+    },
+    companies: {
+      type: GraphQLList(CompanyType),
+      args: {},
+      resolve() {
+        console.log('adding user!');
+        return axios.get('http://localhost:3000/companies')
+          .then(res => res.data);
       },
     },
     company: {
@@ -101,7 +135,6 @@ const mutation = new GraphQLObjectType({
         companyId: { type: GraphQLString },
       },
       resolve(parentValue, args) {
-        console.log('editing user!!1 ', args);
         return axios.patch(`http://localhost:3000/users/${args.id}`, args)
           .then(res => res.data);
       },
@@ -109,6 +142,8 @@ const mutation = new GraphQLObjectType({
   },
 });
 
+
+// GraphQLSchema takes a rootQuery and returns a graphQLSchema
 module.exports = new GraphQLSchema({
   query: RootQuery,
   mutation,
